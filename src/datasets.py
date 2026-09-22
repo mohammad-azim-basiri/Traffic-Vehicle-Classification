@@ -32,24 +32,29 @@ test_dataset = datasets.ImageFolder(root=TEST_ROOT,transform=eval_transform)
 train_loader_baseline = DataLoader(
     train_dataset_baseline,
     batch_size=BATCH_SIZE,
-    shuffle=True
+    shuffle=True,
+    num_workers=0
 )
 train_loader_augmented = DataLoader(
     train_dataset_augmented,
     batch_size=BATCH_SIZE,
-    shuffle=True
+    shuffle=True,
+    num_workers=0
 )
 
 val_loader = DataLoader(
     val_dataset,
     batch_size=BATCH_SIZE,
-    shuffle=False
+    shuffle=False,
+    num_workers=0
 )
 test_loader = DataLoader(
     test_dataset,
     batch_size=BATCH_SIZE,
-    shuffle=False
+    shuffle=False,
+    num_workers=0
 )
+
 # ===================
 # sanity check
 # ===================

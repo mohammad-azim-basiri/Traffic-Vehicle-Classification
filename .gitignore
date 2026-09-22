@@ -1,2 +1,4 @@
 data/
 csv_files/
+__pycache__/
+*.pyc
