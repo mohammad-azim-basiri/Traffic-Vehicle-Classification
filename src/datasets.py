@@ -2,7 +2,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets
 from pathlib import Path
 import torch
-
+from collections import defaultdict
 from transforms import (
     train_baseline_transform,
     train_augmented_transform,
@@ -85,3 +85,8 @@ print(f"Test:  {len(test_dataset)}")
 # ===================
 
 torch.save({"seed": SEED,},"seed42.pt")
+
+
+
+
+
