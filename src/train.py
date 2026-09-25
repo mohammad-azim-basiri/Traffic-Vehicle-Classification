@@ -12,6 +12,8 @@ from datasets import (
 train_loader_baseline,
 train_loader_augmented,
 val_loader,
+train_loader_standard_imbalanced,
+train_loader_balanced_imbalanced
 )
 
 SEED = 42
@@ -227,7 +229,7 @@ def train_scheduler():
     return model, history
 
 # ===========================================
-
+# reducelronplateau_exp
 # ===========================================
 def reducelronplateau_exp():
     print("=== Training Small CNN | ReduceLROnPlateau ===")
@@ -253,14 +255,77 @@ def reducelronplateau_exp():
     )
     return history, scheduler
 
+# ===========================================
+# train_standard_imbalanced
+# ===========================================
+def train_standard_imbalanced(dropout=0.0,pooling="max"):
+    print(f"=== Training Small CNN | train_loader_standard_imbalanced ===")
 
+    set_seed(SEED)
+    model_standard_imbalanced = SmallCnn(num_classes=8,dropout=dropout,pooling=pooling).to(device)
+    optimizer_standard_imbalanced = optim.Adam(model_standard_imbalanced.parameters(), lr=0.001)
 
+    start_time = time.time()
+
+    history_standard_imbalanced = run_experiment(
+        model=model_standard_imbalanced,
+        train_loader=train_loader_standard_imbalanced,
+        val_loader=val_loader,
+        optimizer=optimizer_standard_imbalanced,
+        device=device,
+        epochs=num_epochs,
+        checkpoint_path="train_loader_standard_imbalanced.pt",
+        scheduler=None
+    )
+    end_time = time.time()
+    print(f"Training time: {end_time - start_time:.2f} seconds")
+
+    plot_training_history(
+        history_standard_imbalanced,
+        "train_loader_standard_imbalanced",
+        output_dir
+    )
+    return model_standard_imbalanced,history_standard_imbalanced
+
+# ===========================================
+# train_loader_balanced_imbalanced
+# ===========================================
+def train_balanced_imbalanced(dropout=0.0,pooling="max"):
+    print(f"=== Training Small CNN | train_balanced_imbalanced ===")
+
+    set_seed(SEED)
+    model_balanced_imbalanced = SmallCnn(num_classes=8,dropout=dropout,pooling=pooling).to(device)
+    optimizer_balanced_imbalanced = optim.Adam(model_balanced_imbalanced.parameters(), lr=0.001)
+
+    start_time = time.time()
+
+    history_balanced_imbalanced = run_experiment(
+        model=model_balanced_imbalanced,
+        train_loader=train_loader_balanced_imbalanced,
+        val_loader=val_loader,
+        optimizer=optimizer_balanced_imbalanced,
+        device=device,
+        epochs=num_epochs,
+        checkpoint_path="train_balanced_imbalanced.pt",
+        scheduler=None
+    )
+    end_time = time.time()
+    print(f"Training time: {end_time - start_time:.2f} seconds")
+
+    plot_training_history(
+        history_balanced_imbalanced,
+        "train_balanced_imbalanced",
+        output_dir
+    )
+    return model_balanced_imbalanced,history_balanced_imbalanced
 
 if __name__ == "__main__":
-    # train_small_cnn()
+    train_small_cnn()
     # train_augmented()
     # dropout_exp()
     # train_small_cnn_avgpool(pooling="avg")
     # weight_decay_exp()
-    train_scheduler()
+    # train_scheduler()
     # reducelronplateau_exp()
+    # train_standard_imbalanced()
+    # train_balanced_imbalanced()
