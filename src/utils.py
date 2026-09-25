@@ -282,3 +282,24 @@ def create_scheduler(optimizer):
         factor=0.1,
         min_lr=1e-6
     )
+
+
+def print_metrics(metrics, classes):
+    print(f"Precision macro: {metrics['precision_macro']:.4f}")
+    print(f"Recall macro: {metrics['recall_macro']:.4f}")
+    print(f"F1 macro: {metrics['f1_macro']:.4f}")
+
+    print("\nPer-class metrics:")
+
+    for cls, precision, recall, f1 in zip(
+        classes,
+        metrics['per_class_precision'],
+        metrics['per_class_recall'],
+        metrics['per_class_f1']
+    ):
+        print(
+            f"{cls:10s} | "
+            f"Precision: {precision:.2f} | "
+            f"Recall: {recall:.2f} | "
+            f"F1: {f1:.2f}"
+        )
