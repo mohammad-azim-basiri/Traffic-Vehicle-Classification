@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import random
 import numpy as np
 from sklearn.metrics import precision_score, recall_score, f1_score,confusion_matrix,ConfusionMatrixDisplay
@@ -9,6 +10,8 @@ from pathlib import Path
 from torch import optim
 
 criterion = nn.CrossEntropyLoss()
+bce_criterion = nn.BCEWithLogitsLoss() # also do sigmoid.
+# bce_criterion = nn.BCELoss() # we should do sigmoid.
 
 def run_one_epoch(model, loader, optimizer=None, device="cpu"):
     is_training = optimizer is not None
@@ -88,6 +91,7 @@ def run_experiment(model,train_loader,val_loader,optimizer,device,epochs=5,check
                 scheduler.step()
 
     return history
+
 
 def set_seed(seed=42):
     random.seed(seed)
@@ -215,13 +219,7 @@ def plot_training_history(history, experiment_name, output_dir):
     plt.close()
 
 
-def plot_confusion_matrices(
-    y_true,
-    y_pred,
-    classes,
-    experiment_name,
-    output_dir
-):
+def plot_confusion_matrices(y_true,y_pred,classes,experiment_name,output_dir):
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -273,7 +271,6 @@ def plot_confusion_matrices(
     return cm, cm_normalized
 
 
-
 def create_scheduler(optimizer):
     return torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
@@ -303,3 +300,89 @@ def print_metrics(metrics, classes):
             f"Recall: {recall:.2f} | "
             f"F1: {f1:.2f}"
         )
+
+
+def run_one_epoch_bce(model, loader, optimizer=None, device="cpu"):
+    is_training = optimizer is not None
+    model.train(is_training)
+
+    running_loss = 0.0
+    correct = 0
+    total = 0
+
+    with torch.set_grad_enabled(is_training):
+        for batch_idx, (images, labels) in enumerate(loader):
+            images, labels = images.to(device), labels.to(device)
+
+            outputs = model(images)
+
+            targets = F.one_hot(
+                labels,
+                num_classes=outputs.size(1)
+            ).float()
+
+            loss = bce_criterion(outputs, targets)
+
+            if is_training:
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+            running_loss += loss.item() * labels.size(0)
+            correct += (outputs.argmax(1) == labels).sum().item()
+            total += labels.size(0)
+
+    return {
+        "loss": running_loss / total,
+        "Accuracy": correct / total,
+    }
+
+
+def run_experiment_bce(model,train_loader,val_loader,optimizer,device,epochs=5,checkpoint_path="best_model.pt",scheduler=None):
+    history = {
+        "train_loss": [],
+        "val_loss": [],
+        "train_accuracy": [],
+        "val_accuracy": [],
+    }
+    best_val_acc = -float("inf")
+
+    for epoch in range(epochs):
+        train_metrics = run_one_epoch_bce( model, loader=train_loader,optimizer=optimizer,device=device)
+        val_metrics = run_one_epoch_bce(model,loader=val_loader,optimizer=None,device=device)
+
+        current_lr = optimizer.param_groups[0]["lr"]
+
+        history["train_loss"].append(train_metrics["loss"])
+        history["val_loss"].append(val_metrics["loss"])
+        history["train_accuracy"].append(train_metrics["Accuracy"])
+        history["val_accuracy"].append(val_metrics["Accuracy"])
+
+        if val_metrics["Accuracy"] > best_val_acc:
+            best_val_acc = val_metrics["Accuracy"]
+
+            torch.save(
+                model.state_dict(),
+                f"../results/saved/{checkpoint_path}"
+            )
+
+        print(
+            f"Epoch {epoch + 1:02d}/{epochs} | "
+            f"train loss: {train_metrics['loss']:.3f} | "
+            f"val loss: {val_metrics['loss']:.3f} | "
+            f"train acc: {train_metrics['Accuracy']:.1%} | "
+            f"val acc: {val_metrics['Accuracy']:.1%} | "
+            f"current lr: {current_lr}"
+        )
+
+        if scheduler is not None:
+            if isinstance(
+                    scheduler,
+                    torch.optim.lr_scheduler.ReduceLROnPlateau
+            ):
+                scheduler.step(val_metrics["loss"])
+
+            else:
+                scheduler.step()
+
+    return history

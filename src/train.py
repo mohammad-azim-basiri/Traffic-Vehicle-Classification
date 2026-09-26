@@ -4,7 +4,7 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 
 from models import SmallCnn
-from utils import run_experiment,set_seed,plot_training_history,create_scheduler
+from utils import run_experiment,run_experiment_bce,set_seed,plot_training_history,create_scheduler
 import time
 from pathlib import Path
 
@@ -319,8 +319,41 @@ def train_balanced_imbalanced(dropout=0.0,pooling="max"):
     )
     return model_balanced_imbalanced,history_balanced_imbalanced
 
+# ===========================================
+# train_small_cnn_bce experiments
+# ===========================================
+def train_small_cnn_bce(dropout=0.0,pooling="max"):
+    print(f"=== Training Small CNN | BCE ===")
+
+    set_seed(SEED)
+    model_bce = SmallCnn(num_classes=8,dropout=dropout,pooling=pooling).to(device)
+    optimizer_bce = optim.Adam(model_bce.parameters(), lr=0.001)
+
+    start_time = time.time()
+
+    history_bce = run_experiment_bce(
+        model=model_bce,
+        train_loader=train_loader_baseline,
+        val_loader=val_loader,
+        optimizer=optimizer_bce,
+        device=device,
+        epochs=num_epochs,
+        checkpoint_path=f"best_bce_small_cnn.pt",
+        scheduler=None
+    )
+    end_time = time.time()
+    print(f"Training time: {end_time - start_time:.2f} seconds")
+
+    plot_training_history(
+        history_bce,
+        f"best_bce_small_cnn",
+        output_dir
+    )
+    return model_bce,history_bce
+
+
 if __name__ == "__main__":
-    train_small_cnn()
+    # train_small_cnn()
     # train_augmented()
     # dropout_exp()
     # train_small_cnn_avgpool(pooling="avg")
@@ -329,3 +362,5 @@ if __name__ == "__main__":
     # reducelronplateau_exp()
     # train_standard_imbalanced()
     # train_balanced_imbalanced()
+    # train_small_cnn_bce()
+    ...
