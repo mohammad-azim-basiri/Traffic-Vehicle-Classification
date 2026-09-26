@@ -386,3 +386,48 @@ def run_experiment_bce(model,train_loader,val_loader,optimizer,device,epochs=5,c
                 scheduler.step()
 
     return history
+
+
+
+def extract_predictions_and_confidence(model,loader,device="cpu",loss_type="ce"):
+    model.eval()
+    all_targets = []
+    all_predictions = []
+    all_confidences = []
+    all_scores = []
+
+
+    with torch.no_grad():
+        for batch_idx, (images, labels) in enumerate(loader):
+            images, labels = images.to(device), labels.to(device)
+            logits = model(images)
+
+            if loss_type == "ce":
+                scores = torch.softmax(logits, dim=1)
+            elif loss_type == "bce":
+                scores = torch.sigmoid(logits)
+            else :
+                raise ValueError("loss_type must be either 'ce' or 'bce'")
+
+            predictions = logits.argmax(dim=1)
+
+            confidences = scores.gather(
+                dim=1,
+                index=predictions.unsqueeze(dim=1)
+            ).squeeze(1)
+            all_targets.extend(labels.cpu().numpy())
+            all_predictions.extend(predictions.cpu().numpy())
+            all_confidences.extend(confidences.cpu().numpy())
+            all_scores.extend(scores.cpu().numpy())
+
+    return all_targets, all_predictions, all_confidences,all_scores
+
+
+
+
+
+
+
+
+
+
