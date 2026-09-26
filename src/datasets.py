@@ -74,16 +74,16 @@ assert train_dataset_baseline.class_to_idx == test_dataset.class_to_idx
 
 assert len(train_dataset_baseline.classes) == 8
 
-print("Classes:")
-print(train_dataset_baseline.classes)
+# print("Classes:")
+# print(train_dataset_baseline.classes)
 
-print("\nClass mapping:")
-print(train_dataset_baseline.class_to_idx)
+# print("\nClass mapping:")
+# print(train_dataset_baseline.class_to_idx)
 
-print("\nDataset sizes:")
-print(f"Train: {len(train_dataset_baseline)}")
-print(f"Val:   {len(val_dataset)}")
-print(f"Test:  {len(test_dataset)}")
+# print("\nDataset sizes:")
+# print(f"Train: {len(train_dataset_baseline)}")
+# print(f"Val:   {len(val_dataset)}")
+# print(f"Test:  {len(test_dataset)}")
 
 # ===================
 # save SEED for reproducibility
@@ -91,7 +91,7 @@ print(f"Test:  {len(test_dataset)}")
 
 torch.save({"seed": SEED,},"seed42.pt")
 
-print(Counter(train_dataset_baseline.targets)) #Counter({7: 119, 2: 80, 5: 80, 6: 80, 1: 79, 4: 78, 3: 77, 0: 74})
+# print(Counter(train_dataset_baseline.targets)) #Counter({7: 119, 2: 80, 5: 80, 6: 80, 1: 79, 4: 78, 3: 77, 0: 74})
 
 
 # ===================================
@@ -140,7 +140,7 @@ def create_imbalanced_indices(dataset, target_counts, seed=SEED):
 # Standard sampling
 # -------------------------
 imbalanced_indices = create_imbalanced_indices(train_dataset_baseline, imbalance_counts,SEED)
-print(len(imbalanced_indices))
+# print(len(imbalanced_indices))
 
 imbalanced_train_dataset = Subset(train_dataset_baseline, imbalanced_indices)
 imbalanced_targets =[
@@ -152,8 +152,8 @@ train_loader_standard_imbalanced = DataLoader(
     shuffle=True,
     drop_last=True
 )
-print(len(imbalanced_targets))
-print(Counter(imbalanced_targets))
+#print(len(imbalanced_targets))
+#print(Counter(imbalanced_targets))
 
 # -------------------------
 # Balanced sampling
@@ -210,12 +210,12 @@ train_loader_balanced_imbalanced  = DataLoader(
 )
 
 images, labels = next(iter(train_loader_balanced_imbalanced ))
-print(f"labels:{labels}")  #labels:tensor([0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5,6, 6, 6, 6, 7, 7, 7, 7])
-print(Counter(labels.tolist()))  #Counter({0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4})
+#print(f"labels:{labels}")  #labels:tensor([0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5,6, 6, 6, 6, 7, 7, 7, 7])
+#print(Counter(labels.tolist()))  #Counter({0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4})
 
 
 for batch_idx, (_, labels) in enumerate(train_loader_balanced_imbalanced ):
     counts = Counter(labels.tolist())
-    print(f"Batch {batch_idx}: {counts}")
+    #print(f"Batch {batch_idx}: {counts}")
     if batch_idx == 4:
         break
