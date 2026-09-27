@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+from torchvision.models import resnet18,ResNet18_Weights
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 class SmallCnn(nn.Module):
     def __init__(self,num_classes=8,dropout=0.0,pooling="max"):
@@ -83,3 +85,27 @@ class SmallCnn(nn.Module):
 #
 # print(f"Total parameters: {total_params:,}")        # 585,640
 # print(f"Trainable parameters: {trainable_params:,}")        # 585,640
+
+
+def resnet18_model(num_classes=8):
+    weights = ResNet18_Weights.DEFAULT
+    model = resnet18(weights=weights)
+
+    for param in model.parameters():
+        param.requires_grad = False
+
+    model.fc = nn.Linear(model.fc.in_features,num_classes)
+
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    total_params = sum(p.numel() for p in model.parameters())
+
+    print(f"Trainable params: {trainable_params}")
+    print(f"Total params: {total_params}")
+
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            print(name, param.shape)
+
+    model = model.to(device)
+
+    return model
