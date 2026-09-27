@@ -2,6 +2,7 @@ from symtable import Class
 
 from torch.utils.data import DataLoader,Subset
 from torchvision import datasets
+from torchvision.models import ResNet18_Weights
 from pathlib import Path
 import torch
 from torch.utils.data import Sampler
@@ -10,7 +11,8 @@ from collections import Counter
 from transforms import (
     train_baseline_transform,
     train_augmented_transform,
-    eval_transform
+    eval_transform,
+    train_transform_resnet
 )
 
 BATCH_SIZE = 32
@@ -219,3 +221,33 @@ for batch_idx, (_, labels) in enumerate(train_loader_balanced_imbalanced ):
     #print(f"Batch {batch_idx}: {counts}")
     if batch_idx == 4:
         break
+
+
+
+weights = ResNet18_Weights.DEFAULT
+transform_resnet = weights.transforms()
+
+train_dataset_resnet = datasets.ImageFolder(root=TRAIN_ROOT,transform=transform_resnet)
+val_dataset_resnet = datasets.ImageFolder(root=VAL_ROOT,transform=transform_resnet)
+test_dataset_resnet = datasets.ImageFolder(root=TEST_ROOT,transform=transform_resnet)
+
+train_loader_resnet = DataLoader(
+    train_dataset_resnet,
+    batch_size=BATCH_SIZE,
+    shuffle=True,
+    num_workers=0
+)
+val_loader_resnet = DataLoader(
+    val_dataset_resnet,
+    batch_size=BATCH_SIZE,
+    shuffle=False,
+    num_workers=0
+)
+test_loader_resnet = DataLoader(
+    test_dataset_resnet,
+    batch_size=BATCH_SIZE,
+    shuffle=False,
+    num_workers=0
+)
+assert train_dataset_resnet.class_to_idx == val_dataset_resnet.class_to_idx
+assert train_dataset_resnet.class_to_idx == test_dataset_resnet.class_to_idx
