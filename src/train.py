@@ -2,8 +2,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim import lr_scheduler
+from torchvision.models import resnet18,ResNet18_Weights
 
-from models import SmallCnn
+from models import SmallCnn,resnet18_model
 from utils import run_experiment,run_experiment_bce,set_seed,plot_training_history,create_scheduler
 import time
 from pathlib import Path
@@ -13,7 +14,9 @@ train_loader_baseline,
 train_loader_augmented,
 val_loader,
 train_loader_standard_imbalanced,
-train_loader_balanced_imbalanced
+train_loader_balanced_imbalanced,
+train_loader_resnet,
+val_loader_resnet
 )
 
 SEED = 42
@@ -23,6 +26,7 @@ output_dir = Path("../results/img")
 output_dir.mkdir(parents=True, exist_ok=True)
 
 num_epochs = 50
+LR=0.001
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -351,6 +355,24 @@ def train_small_cnn_bce(dropout=0.0,pooling="max"):
     )
     return model_bce,history_bce
 
+# ===========================================
+# train RESNET18 model
+# ===========================================
+def train_resnet18(num_classes=8):
+    set_seed(SEED)
+    model_resnet = resnet18_model(num_classes=8)
+    optimizer = torch.optim.Adam(model_resnet.fc.parameters(),lr=LR)
+    history = run_experiment(
+        model_resnet,
+        train_loader_resnet,
+        val_loader_resnet,
+        optimizer,
+        device,
+        num_epochs,
+        "resnet18_pretrained.pt",
+        scheduler=None
+    )
+    return history
 
 if __name__ == "__main__":
     # train_small_cnn()
@@ -363,4 +385,4 @@ if __name__ == "__main__":
     # train_standard_imbalanced()
     # train_balanced_imbalanced()
     # train_small_cnn_bce()
-    ...
+    train_resnet18(8)
