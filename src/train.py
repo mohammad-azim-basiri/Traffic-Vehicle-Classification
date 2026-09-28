@@ -105,7 +105,6 @@ def train_augmented():
 # =================================================
 def dropout_exp():
     print("=== Dropping output experiment ===")
-    set_seed(SEED)
     dropout_values = [0.3, 0.5]
     dropout_results = {}
 
@@ -182,9 +181,6 @@ def train_small_cnn_weight_decay(dropout=0.0,pooling="max",weight_decay=0.0001):
     )
     return model_weight_decay,history_weight_decay
 
-# ==========================================
-# weight decay experiments
-# ==========================================
 def weight_decay_exp():
     set_seed(SEED)
     weight_decay_values = [0, 1e-4]
@@ -364,7 +360,7 @@ def train_small_cnn_bce(dropout=0.0,pooling="max"):
 # ===========================================
 def train_resnet18(num_classes=8):
     set_seed(SEED)
-    model_resnet = resnet18_model(num_classes=num_classes)
+    model_resnet = resnet18_model(num_classes=8)
     optimizer = torch.optim.Adam(model_resnet.fc.parameters(),lr=LR)
     history = run_experiment(
         model_resnet,
@@ -376,65 +372,7 @@ def train_resnet18(num_classes=8):
         "resnet18_pretrained.pt",
         scheduler=None
     )
-    plot_training_history(
-        history,
-        "resnet18_pretrained",
-        output_dir
-    )
-    return model_resnet
-
-# ===========================================
-# train RESNET18 model fine-tuned
-# ===========================================
-def train_resnet18_ft(num_classes=8):
-    set_seed(SEED)
-    model_resnet_ft = resnet18_model(num_classes=num_classes)
-
-    model_resnet_ft.load_state_dict(
-        torch.load(
-            "../results/saved/resnet18_pretrained.pt",
-            map_location=device
-        )
-    )
-    for param in model_resnet_ft.parameters():
-        param.requires_grad = False
-
-    for param in model_resnet_ft.layer4.parameters():
-        param.requires_grad = True
-
-    for param in model_resnet_ft.fc.parameters():
-        param.requires_grad = True
-
-    trainable_params = sum(p.numel() for p in model_resnet_ft.parameters() if p.requires_grad)
-    total_params = sum(p.numel() for p in model_resnet_ft.parameters())
-
-    print(f"Trainable params: {trainable_params}")
-    print(f"Total params: {total_params}")
-
-    optimizer_resnet_ft = optim.Adam([
-        {'params': model_resnet_ft.layer4.parameters(), 'lr': 1e-4},
-        {'params': model_resnet_ft.fc.parameters(), 'lr': 1e-3},
-    ])
-    start_time = time.time()
-    history_resnet_ft = run_experiment(
-        model=model_resnet_ft,
-        train_loader=train_loader_resnet,
-        val_loader=val_loader_resnet,
-        optimizer=optimizer_resnet_ft,
-        device=device,
-        epochs=num_epochs,
-        checkpoint_path=f"best_resnet18_ft.pt",
-        scheduler=None
-    )
-    end_time = time.time()
-    print(f"Training time: {end_time - start_time:.2f} seconds")
-    plot_training_history(
-        history_resnet_ft,
-        "resnet18_fine-tuned",
-        output_dir
-
-    )
-    return history_resnet_ft
+    return history
 
 if __name__ == "__main__":
     # train_small_cnn()
@@ -447,5 +385,4 @@ if __name__ == "__main__":
     # train_standard_imbalanced()
     # train_balanced_imbalanced()
     # train_small_cnn_bce()
-    # train_resnet18(8)
-    train_resnet18_ft(8)
+    train_resnet18(8)
