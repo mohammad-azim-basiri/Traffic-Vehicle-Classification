@@ -56,7 +56,9 @@ def run_experiment(model,train_loader,val_loader,optimizer,device,epochs=5,check
         train_metrics = run_one_epoch( model, loader=train_loader,optimizer=optimizer,device=device)
         val_metrics = run_one_epoch(model,loader=val_loader,optimizer=None,device=device)
 
-        current_lr = optimizer.param_groups[0]["lr"]
+        current_lr = [
+            group["lr"] for group in optimizer.param_groups
+        ]
 
         history["train_loss"].append(train_metrics["loss"])
         history["val_loss"].append(val_metrics["loss"])
@@ -386,7 +388,6 @@ def run_experiment_bce(model,train_loader,val_loader,optimizer,device,epochs=5,c
                 scheduler.step()
 
     return history
-
 
 
 def extract_predictions_and_confidence(model,loader,device="cpu",loss_type="ce"):
