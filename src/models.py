@@ -96,15 +96,15 @@ def resnet18_model(num_classes=8):
 
     model.fc = nn.Linear(model.fc.in_features,num_classes)
 
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    total_params = sum(p.numel() for p in model.parameters())
+    # trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    # total_params = sum(p.numel() for p in model.parameters())
 
-    print(f"Trainable params: {trainable_params}")
-    print(f"Total params: {total_params}")
-
-    for name, param in model.named_parameters():
-        if param.requires_grad:
-            print(name, param.shape)
+    # print(f"Trainable params: {trainable_params}")
+    # print(f"Total params: {total_params}")
+    #
+    # for name, param in model.named_parameters():
+    #     if param.requires_grad:
+    #         print(name, param.shape)
 
     model = model.to(device)
 
