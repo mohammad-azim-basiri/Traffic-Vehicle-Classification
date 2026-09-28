@@ -87,6 +87,12 @@ assert len(train_dataset_baseline.classes) == 8
 # print(f"Val:   {len(val_dataset)}")
 # print(f"Test:  {len(test_dataset)}")
 
+# ===================
+# save SEED for reproducibility
+# ===================
+
+torch.save({"seed": SEED,},"seed42.pt")
+
 # print(Counter(train_dataset_baseline.targets)) #Counter({7: 119, 2: 80, 5: 80, 6: 80, 1: 79, 4: 78, 3: 77, 0: 74})
 
 
