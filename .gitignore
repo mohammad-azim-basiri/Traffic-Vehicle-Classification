@@ -2,3 +2,5 @@ data/
 csv_files/
 __pycache__/
 *.pyc
+.idea
+epochs_report.ipynb
