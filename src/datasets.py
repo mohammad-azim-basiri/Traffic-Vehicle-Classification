@@ -20,7 +20,6 @@ SEED = 42
 DATASET_ROOT =Path("../data/dataset")
 TRAIN_ROOT = DATASET_ROOT / "cleaned" / "train"
 VAL_ROOT = DATASET_ROOT / "cleaned" / "val"
-TEST_ROOT = DATASET_ROOT / "test"
 
 generator = torch.Generator().manual_seed(SEED)
 
@@ -30,7 +29,6 @@ train_dataset_augmented = datasets.ImageFolder(root=TRAIN_ROOT,transform=train_a
 
 val_dataset = datasets.ImageFolder(root=VAL_ROOT,transform=eval_transform)
 
-test_dataset = datasets.ImageFolder(root=TEST_ROOT,transform=eval_transform)
 
 # ===================
 # DataLoaders
@@ -55,12 +53,6 @@ val_loader = DataLoader(
     shuffle=False,
     num_workers=0
 )
-test_loader = DataLoader(
-    test_dataset,
-    batch_size=BATCH_SIZE,
-    shuffle=False,
-    num_workers=0
-)
 
 # ===================
 # sanity check
@@ -68,41 +60,42 @@ test_loader = DataLoader(
 
 assert train_dataset_baseline.classes == train_dataset_augmented.classes
 assert train_dataset_baseline.classes == val_dataset.classes
-assert train_dataset_baseline.classes == test_dataset.classes
 
 assert train_dataset_baseline.class_to_idx == train_dataset_augmented.class_to_idx
 assert train_dataset_baseline.class_to_idx == val_dataset.class_to_idx
-assert train_dataset_baseline.class_to_idx == test_dataset.class_to_idx
 
 assert len(train_dataset_baseline.classes) == 8
 
 # print("Classes:")
 # print(train_dataset_baseline.classes)
+#Classes:['ambulance', 'autobus', 'kamyun', 'kamyunet', 'minibus', 'savari', 'taxi', 'vanet']
 
 # print("\nClass mapping:")
 # print(train_dataset_baseline.class_to_idx)
+# Class mapping:{'ambulance': 0, 'autobus': 1, 'kamyun': 2, 'kamyunet': 3, 'minibus': 4, 'savari': 5, 'taxi': 6, 'vanet': 7}
 
 # print("\nDataset sizes:")
-# print(f"Train: {len(train_dataset_baseline)}")
-# print(f"Val:   {len(val_dataset)}")
-# print(f"Test:  {len(test_dataset)}")
+# print(f"Train: {len(train_dataset_baseline)}")    #2988
+# print(f"Val:   {len(val_dataset)}")   #748
 
-# print(Counter(train_dataset_baseline.targets)) #Counter({7: 119, 2: 80, 5: 80, 6: 80, 1: 79, 4: 78, 3: 77, 0: 74})
+# print(Counter(train_dataset_baseline.targets))
+#Counter({3: 451, 5: 449, 6: 428, 1: 416, 2: 389, 4: 369, 0: 326, 7: 160})
 
 
 # ===================================
 # Imbalanced dataset
 #====================================
 imbalance_counts = {
-    0: 34,   # ambulance
-    1: 39,   # autobus
-    2: 40,   # kamyun
-    3: 77,   # kamyunet
-    4: 38,   # minibus
-    5: 80,   # savari
-    6: 80,   # taxi
-    7: 119,  # vanet
+    0: 126,   # ambulance
+    1: 216,   # autobus
+    2: 189,   # kamyun
+    3: 451,   # kamyunet
+    4: 169,   # minibus
+    5: 449,   # savari
+    6: 428,   # taxi
+    7: 160,  # vanet
 }
+
 def create_imbalanced_indices(dataset, target_counts, seed=SEED):
     generator = torch.Generator().manual_seed(seed)
 
@@ -136,7 +129,8 @@ def create_imbalanced_indices(dataset, target_counts, seed=SEED):
 # Standard sampling
 # -------------------------
 imbalanced_indices = create_imbalanced_indices(train_dataset_baseline, imbalance_counts,SEED)
-# print(len(imbalanced_indices))
+# print(f"len(imbalanced_indices):{len(imbalanced_indices)}")
+# len(imbalanced_indices):2188
 
 imbalanced_train_dataset = Subset(train_dataset_baseline, imbalanced_indices)
 imbalanced_targets =[
@@ -148,8 +142,10 @@ train_loader_standard_imbalanced = DataLoader(
     shuffle=True,
     drop_last=True
 )
-#print(len(imbalanced_targets))
-#print(Counter(imbalanced_targets))
+# print(f"len(imbalanced_targets):{len(imbalanced_targets)}")
+# print(f"Counter(imbalanced_targets):{Counter(imbalanced_targets)}")
+# len(imbalanced_targets):2188
+# Counter(imbalanced_targets):Counter({3: 451, 5: 449, 6: 428, 1: 216, 2: 189, 4: 169, 7: 160, 0: 126})
 
 # -------------------------
 # Balanced sampling
@@ -206,13 +202,20 @@ train_loader_balanced_imbalanced  = DataLoader(
 )
 
 images, labels = next(iter(train_loader_balanced_imbalanced ))
-#print(f"labels:{labels}")  #labels:tensor([0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5,6, 6, 6, 6, 7, 7, 7, 7])
-#print(Counter(labels.tolist()))  #Counter({0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4})
+# print(f"labels:{labels}")
+#labels:tensor([0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5,6, 6, 6, 6, 7, 7, 7, 7])
+# print(Counter(labels.tolist()))
+# Counter({0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4})
 
 
 for batch_idx, (_, labels) in enumerate(train_loader_balanced_imbalanced ):
     counts = Counter(labels.tolist())
-    #print(f"Batch {batch_idx}: {counts}")
+    # print(f"Batch {batch_idx}: {counts}")
+    # Batch0: Counter({0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4})
+    # Batch1: Counter({0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4})
+    # Batch2: Counter({0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4})
+    # Batch3: Counter({0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4})
+    # Batch4: Counter({0: 4, 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4})
     if batch_idx == 4:
         break
 
@@ -223,7 +226,6 @@ transform_resnet = weights.transforms()
 
 train_dataset_resnet = datasets.ImageFolder(root=TRAIN_ROOT,transform=transform_resnet)
 val_dataset_resnet = datasets.ImageFolder(root=VAL_ROOT,transform=transform_resnet)
-test_dataset_resnet = datasets.ImageFolder(root=TEST_ROOT,transform=transform_resnet)
 
 train_loader_resnet = DataLoader(
     train_dataset_resnet,
@@ -237,11 +239,5 @@ val_loader_resnet = DataLoader(
     shuffle=False,
     num_workers=0
 )
-test_loader_resnet = DataLoader(
-    test_dataset_resnet,
-    batch_size=BATCH_SIZE,
-    shuffle=False,
-    num_workers=0
-)
+
 assert train_dataset_resnet.class_to_idx == val_dataset_resnet.class_to_idx
-assert train_dataset_resnet.class_to_idx == test_dataset_resnet.class_to_idx
