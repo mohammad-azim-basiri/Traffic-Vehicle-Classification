@@ -226,7 +226,6 @@ def train_scheduler():
         scheduler=scheduler
     )
     end_time = time.time()
-
     print(f"Training time: {end_time - start_time:.2f} seconds")
 
     plot_training_history(
@@ -245,6 +244,9 @@ def reducelronplateau_exp():
     model = SmallCnn(num_classes=8,dropout=0.0,pooling="max").to(device)
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     scheduler = create_scheduler(optimizer)
+
+    start_time = time.time()
+
     history = run_experiment(
         model=model,
         train_loader=train_loader_baseline,
@@ -255,6 +257,8 @@ def reducelronplateau_exp():
         epochs=num_epochs,
         checkpoint_path="best_reduce_lr_small_cnn.pt"
     )
+    end_time = time.time()
+    print(f"Training time: {end_time - start_time:.2f} seconds")
 
     plot_training_history(
         history,
@@ -366,6 +370,8 @@ def train_resnet18(num_classes=8):
     set_seed(SEED)
     model_resnet = resnet18_model(num_classes=num_classes)
     optimizer = torch.optim.Adam(model_resnet.fc.parameters(),lr=LR)
+    start_time = time.time()
+
     history = run_experiment(
         model_resnet,
         train_loader_resnet,
@@ -376,6 +382,10 @@ def train_resnet18(num_classes=8):
         "resnet18_pretrained.pt",
         scheduler=None
     )
+
+    end_time = time.time()
+    print(f"Training time: {end_time - start_time:.2f} seconds")
+
     plot_training_history(
         history,
         "resnet18_pretrained",
