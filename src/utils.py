@@ -6,8 +6,8 @@ import numpy as np
 from sklearn.metrics import precision_score, recall_score, f1_score,confusion_matrix,ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 from pathlib import Path
-
-from torch import optim
+import time
+import gc
 
 criterion = nn.CrossEntropyLoss()
 bce_criterion = nn.BCEWithLogitsLoss() # also do sigmoid.
@@ -91,6 +91,12 @@ def run_experiment(model,train_loader,val_loader,optimizer,device,epochs=5,check
 
             else:
                 scheduler.step()
+
+        # if (epoch + 1) % 10 == 0 and (epoch + 1) < epochs:
+        #     for remaining in range(300, 0, -1):
+        #         print(f"\rCooling down... {remaining:03d} seconds remaining", end="")
+        #         time.sleep(1)
+        #     print("\n")
 
     return history
 
@@ -423,7 +429,17 @@ def extract_predictions_and_confidence(model,loader,device="cpu",loss_type="ce")
 
     return all_targets, all_predictions, all_confidences,all_scores
 
+def cuda_cooldown(seconds=300):
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
 
+    gc.collect()
+
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    print(f"Cooling down for {seconds} seconds...")
+    time.sleep(seconds)
 
 
 
