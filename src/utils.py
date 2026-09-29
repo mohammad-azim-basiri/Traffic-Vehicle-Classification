@@ -92,11 +92,11 @@ def run_experiment(model,train_loader,val_loader,optimizer,device,epochs=5,check
             else:
                 scheduler.step()
 
-        # if (epoch + 1) % 10 == 0 and (epoch + 1) < epochs:
-        #     for remaining in range(300, 0, -1):
-        #         print(f"\rCooling down... {remaining:03d} seconds remaining", end="")
-        #         time.sleep(1)
-        #     print("\n")
+        if (epoch + 1) % 10 == 0 and (epoch + 1) < epochs:
+            for remaining in range(300, 0, -1):
+                print(f"\rCooling down... {remaining:03d} seconds remaining", end="")
+                time.sleep(1)
+            print("\n")
 
     return history
 
