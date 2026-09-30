@@ -1,6 +1,12 @@
 import torch
 import torch.nn as nn
-from torchvision.models import resnet18,ResNet18_Weights
+from torchvision.models import (
+    resnet18,ResNet18_Weights,
+    vgg19,
+    mobilenet_v3_small,MobileNet_V3_Small_Weights,
+    mobilenet_v3_large,MobileNet_V3_Large_Weights
+)
+
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 class SmallCnn(nn.Module):
@@ -108,4 +114,12 @@ def resnet18_model(num_classes=8):
 
     model = model.to(device)
 
+    return model
+
+
+def mobilenet_v3_small_model(num_classes=8):
+    weights = MobileNet_V3_Small_Weights.DEFAULT
+    model = mobilenet_v3_small(weights=weights)
+    model.classifier[3] = nn.Linear(model.classifier[3].in_features,out_features=num_classes)
+    model = model.to(device)
     return model
