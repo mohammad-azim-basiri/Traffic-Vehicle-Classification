@@ -123,3 +123,15 @@ def mobilenet_v3_small_model(num_classes=8):
     model.classifier[3] = nn.Linear(model.classifier[3].in_features,out_features=num_classes)
     model = model.to(device)
     return model
+
+
+def build_mobilenet_v3_large(num_classes=8, pretrained=True):
+    if pretrained:
+        weights = MobileNet_V3_Large_Weights.DEFAULT
+    else:
+        weights = None
+    model = mobilenet_v3_large(weights=weights)
+    in_features = model.classifier[3].in_features
+    model.classifier[3] = nn.Linear(in_features, num_classes)
+
+    return model
