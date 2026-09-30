@@ -4,7 +4,12 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 from torchvision.models import resnet18,ResNet18_Weights,vgg19,mobilenet_v3_small,MobileNet_V3_Small_Weights
 
-from models import SmallCnn,resnet18_model,mobilenet_v3_small_model
+from models import (
+    SmallCnn,
+    resnet18_model,
+    mobilenet_v3_small_model,
+    build_mobilenet_v3_large
+)
 from utils import run_experiment,run_experiment_bce,set_seed,plot_training_history,create_scheduler
 import time
 from pathlib import Path
@@ -475,17 +480,85 @@ def train_mobilenet_v3_small(num_classes=8,transform="base",train_load=train_loa
         optimizer,
         device,
         epochs= num_epochs,
-        checkpoint_path=f"mobilenet_v3_small_model_{transform}.pth",
+        checkpoint_path=f"mobilenet_v3_small_model_{transform}.pt",
     )
     end_time = time.time()
     print(f"Training time: {end_time - start_time:.2f} seconds")
-    # plot_training_history(
-    #     history,
-    #     f"mobilenet_v3_small_model_{transform}",
-    #     output_dir
-    # )
+    plot_training_history(
+        history,
+        f"mobilenet_v3_small_model_{transform}",
+        output_dir
+    )
     return history
 
+# ====================================
+# train mobilenet_v3_large_model
+# ====================================
+def train_mobilenet_v3_large(
+    num_classes=8,
+    transform="base",
+    train_load=train_loader_resnet,
+    val_load=val_loader_resnet,
+    mode="full",
+    lr=1e-3,
+    unfreeze_last_blocks=2
+):
+    print("=== Training MobileNet v3 large model ===")
+    set_seed(SEED)
+    model_mobilenet_large = build_mobilenet_v3_large(num_classes=num_classes).to(device)
+
+    if mode == "full":
+        for param in model_mobilenet_large.parameters():
+            param.requires_grad = True
+    elif mode == "head":
+        for param in model_mobilenet_large.parameters():
+            param.requires_grad = False
+        for param in model_mobilenet_large.classifier.parameters():
+            param.requires_grad = True
+    elif mode == "last_blocks":
+        for param in model_mobilenet_large.parameters():
+            param.requires_grad = False
+        for param in model_mobilenet_large.features[-unfreeze_last_blocks:].parameters():
+            param.requires_grad = True
+        for param in model_mobilenet_large.classifier.parameters():
+            param.requires_grad = True
+
+    else:
+        raise ValueError("mode must be 'full', 'head' or 'last_blocks'")
+
+    total_params = sum(p.numel() for p in model_mobilenet_large.parameters())
+    trainable_params = sum(p.numel() for p in model_mobilenet_large.parameters() if p.requires_grad)
+
+    print(f"Total parameters: {total_params:,}")
+    print(f"Trainable parameters: {trainable_params:,}")
+
+    optimizer = torch.optim.AdamW(
+        filter(
+            lambda p: p.requires_grad,
+            model_mobilenet_large.parameters()
+        ),
+        lr=lr,
+        weight_decay=1e-4
+    )
+
+    start_time = time.time()
+    history = run_experiment(
+        model_mobilenet_large,
+        train_load,
+        val_load,
+        optimizer,
+        device,
+        epochs=num_epochs,
+        checkpoint_path=f"mobilenet_v3_large_{mode}_{transform}.pt",
+    )
+    end_time = time.time()
+    print(f"Training time:{end_time - start_time:.2f} seconds")
+    plot_training_history(
+        history,
+        f"mobilenet_v3_large_model_{mode}_{transform}",
+        output_dir
+    )
+    return history
 
 if __name__ == "__main__":
     # train_small_cnn()
@@ -503,3 +576,10 @@ if __name__ == "__main__":
     # train_mobilenet_v3_small(num_classes=8,transform="base",train_load=train_loader_resnet,val_load=val_loader_resnet)
     train_mobilenet_v3_small(num_classes=8,transform="better_augment",train_load=train_loader_baseline,val_load=val_loader)
 
+    # train_mobilenet_v3_large(num_classes=8,transform="base",train_load=train_loader_resnet,val_load=val_loader_resnet,mode="full",lr=1e-3,unfreeze_last_blocks=3)
+    # train_mobilenet_v3_large(num_classes=8,transform="base",train_load=train_loader_resnet,val_load=val_loader_resnet,mode="head",lr=1e-3,unfreeze_last_blocks=3)
+    # train_mobilenet_v3_large(num_classes=8,transform="base",train_load=train_loader_resnet,val_load=val_loader_resnet,mode="last_blocks",lr=1e-3,unfreeze_last_blocks=3)
+
+    # train_mobilenet_v3_large(num_classes=8, transform="augment", train_load=train_loader_baseline,val_load=val_loader, mode="full", lr=1e-3, unfreeze_last_blocks=3)
+    # train_mobilenet_v3_large(num_classes=8, transform="augment", train_load=train_loader_baseline,val_load=val_loader, mode="head", lr=1e-3, unfreeze_last_blocks=3)
+    # train_mobilenet_v3_large(num_classes=8, transform="augment", train_load=train_loader_baseline,val_load=val_loader, mode="last_blocks", lr=1e-3, unfreeze_last_blocks=3)
