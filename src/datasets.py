@@ -1,5 +1,3 @@
-from symtable import Class
-
 from torch.utils.data import DataLoader,Subset
 from torchvision import datasets
 from torchvision.models import ResNet18_Weights
@@ -12,7 +10,10 @@ from transforms import (
     train_baseline_transform,
     train_augmented_transform,
     eval_transform,
-    train_transform_resnet
+)
+from torchvision.models import (
+    ResNet18_Weights,
+    MobileNet_V3_Small_Weights
 )
 
 BATCH_SIZE = 32
@@ -220,6 +221,11 @@ for batch_idx, (_, labels) in enumerate(train_loader_balanced_imbalanced ):
         break
 
 
+resnet_weights = ResNet18_Weights.DEFAULT
+mobilenet_weights = MobileNet_V3_Small_Weights.DEFAULT
+
+print(resnet_weights.transforms())
+print(mobilenet_weights.transforms())
 
 weights = ResNet18_Weights.DEFAULT
 transform_resnet = weights.transforms()
@@ -239,5 +245,4 @@ val_loader_resnet = DataLoader(
     shuffle=False,
     num_workers=0
 )
-
 assert train_dataset_resnet.class_to_idx == val_dataset_resnet.class_to_idx
