@@ -475,15 +475,15 @@ def train_mobilenet_v3_small(num_classes=8,transform="base",train_load=train_loa
         optimizer,
         device,
         epochs= num_epochs,
-        checkpoint_path=f"mobilenet_v3_small_model_{transform}.pth",
+        checkpoint_path=f"mobilenet_v3_small_model_{transform}.pt",
     )
     end_time = time.time()
     print(f"Training time: {end_time - start_time:.2f} seconds")
-    # plot_training_history(
-    #     history,
-    #     f"mobilenet_v3_small_model_{transform}",
-    #     output_dir
-    # )
+    plot_training_history(
+        history,
+        f"mobilenet_v3_small_model_{transform}",
+        output_dir
+    )
     return history
 
 
