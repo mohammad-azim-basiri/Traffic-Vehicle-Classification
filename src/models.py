@@ -78,19 +78,18 @@ class SmallCnn(nn.Module):
         x = self.classifier(x)
         return x
 
-# model = SmallCnn(num_classes=8)
-# x = torch.randn(1,3,224,224)
-# y = model(x)
-# print(y.shape)
-#
-# total_params = sum(p.numel() for p in model.parameters())
-# trainable_params = sum(
-#     p.numel() for p in model.parameters()
-#     if p.requires_grad
-# )
-#
-# print(f"Total parameters: {total_params:,}")        # 585,640
-# print(f"Trainable parameters: {trainable_params:,}")        # 585,640
+# *************
+# test model
+# *************
+model_smallcnn = SmallCnn(num_classes=8)
+x_smallcnn = torch.randn(1,3,224,224)
+y_smallcnn = model_smallcnn(x_smallcnn)
+print(y_smallcnn.shape)
+
+total_params_smallcnn = sum(p.numel() for p in model_smallcnn.parameters())
+trainable_params_smallcnn = sum(p.numel() for p in model_smallcnn.parameters() if p.requires_grad)
+print(f"Total parameters small cnn: {total_params_smallcnn:,}")        # 585,640
+print(f"Trainable parameters small cnn: {trainable_params_smallcnn:,}")        # 585,640
 
 
 def resnet18_model(num_classes=8):
@@ -135,3 +134,95 @@ def build_mobilenet_v3_large(num_classes=8, pretrained=True):
     model.classifier[3] = nn.Linear(in_features, num_classes)
 
     return model
+
+
+
+class DepthwiseSeparableConv(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+
+        self.depthwise = nn.Conv2d(
+            in_channels=in_channels,
+            out_channels=in_channels,
+            kernel_size=3,
+            padding=1,
+            groups=in_channels,
+            bias=False
+        )
+
+        self.bn1 = nn.BatchNorm2d(in_channels)
+        self.relu1 = nn.ReLU(inplace=True)
+
+        self.pointwise = nn.Conv2d(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=1,
+            bias=False
+        )
+
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        self.relu2 = nn.ReLU(inplace=True)
+
+    def forward(self, x):
+        x = self.depthwise(x)
+        x = self.bn1(x)
+        x = self.relu1(x)
+
+        x = self.pointwise(x)
+        x = self.bn2(x)
+        x = self.relu2(x)
+
+        return x
+
+class DepthwiseCNN(nn.Module):
+    def __init__(self, num_classes=8,dropout=0.0):
+        super().__init__()
+
+        self.features = nn.Sequential(
+            # Block 1
+            DepthwiseSeparableConv(in_channels=3,out_channels=32),
+            DepthwiseSeparableConv(in_channels=32,out_channels=32),
+            nn.MaxPool2d(2,2),
+
+            # Block 2
+            DepthwiseSeparableConv(in_channels=32,out_channels=64),
+            DepthwiseSeparableConv(in_channels=64,out_channels=64),
+            nn.MaxPool2d(2,2),
+
+            # Block 3
+            DepthwiseSeparableConv(in_channels=64,out_channels=128),
+            DepthwiseSeparableConv(in_channels=128,out_channels=128),
+            nn.MaxPool2d(2,2),
+
+            # Block 4
+            DepthwiseSeparableConv(in_channels=128,out_channels=256),
+        )
+
+        self.avgpool = nn.AdaptiveAvgPool2d((1,1))
+
+        self.classifier = nn.Sequential(
+            nn.Flatten(),
+            nn.Dropout(dropout),
+            nn.Linear(256,num_classes),
+        )
+    def forward(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = self.classifier(x)
+
+        return x
+
+
+# *************
+# test model
+# *************
+model_depth = DepthwiseCNN(num_classes=8, dropout=0.0)
+x_depth = torch.randn(4, 3, 224, 224)
+y_depth = model_depth(x_depth)
+print("Input shape :", x_depth.shape)     #torch.Size([4, 3, 224, 224])
+print("Output shape:", y_depth.shape)     #torch.Size([4, 8])
+
+total_params_depth = sum(p.numel() for p in model_depth.parameters())
+trainable_params_depth = sum(p.numel() for p in model_depth.parameters() if p.requires_grad)
+print(f"Total parameters: {total_params_depth:,}")        # 73,033
+print(f"Trainable parameters: {trainable_params_depth:,}")        # 73,033
