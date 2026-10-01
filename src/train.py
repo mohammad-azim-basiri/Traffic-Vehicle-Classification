@@ -8,7 +8,8 @@ from models import (
     SmallCnn,
     resnet18_model,
     mobilenet_v3_small_model,
-    build_mobilenet_v3_large
+    build_mobilenet_v3_large,
+    DepthwiseCNN
 )
 from utils import run_experiment,run_experiment_bce,set_seed,plot_training_history,create_scheduler
 import time
@@ -47,9 +48,6 @@ def train_small_cnn(dropout=0.0,pooling="max"):
 
     start_time = time.time()
 
-    # checkpoint_dir = Path("../results/saved")
-    # checkpoint_dir.mkdir(parents=True, exist_ok=True)
-
     history = run_experiment(
         model=model,
         train_loader=train_loader_baseline,
@@ -80,9 +78,6 @@ def train_augmented():
     set_seed(SEED)
     model = SmallCnn(num_classes=8,dropout=0).to(device)
     optimizer_augmented = optim.Adam(model.parameters(), lr=0.001)
-
-    # checkpoint_dir = Path("../results/saved")
-    # checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     history = run_experiment(
         model=model,
@@ -131,10 +126,6 @@ def train_small_cnn_avgpool(dropout=0.0,pooling="avg"):
     optimizer_avg = optim.Adam(model_avg.parameters(), lr=0.001)
 
     start_time = time.time()
-
-    # checkpoint_dir = Path("../results/saved")
-    # checkpoint_dir.mkdir(parents=True, exist_ok=True)
-
     history_avg = run_experiment(
         model=model_avg,
         train_loader=train_loader_baseline,
@@ -283,7 +274,6 @@ def train_standard_imbalanced(dropout=0.0,pooling="max"):
     optimizer_standard_imbalanced = optim.Adam(model_standard_imbalanced.parameters(), lr=0.001)
 
     start_time = time.time()
-
     history_standard_imbalanced = run_experiment(
         model=model_standard_imbalanced,
         train_loader=train_loader_standard_imbalanced,
@@ -315,7 +305,6 @@ def train_balanced_imbalanced(dropout=0.0,pooling="max"):
     optimizer_balanced_imbalanced = optim.Adam(model_balanced_imbalanced.parameters(), lr=0.001)
 
     start_time = time.time()
-
     history_balanced_imbalanced = run_experiment(
         model=model_balanced_imbalanced,
         train_loader=train_loader_balanced_imbalanced,
@@ -347,7 +336,6 @@ def train_small_cnn_bce(dropout=0.0,pooling="max"):
     optimizer_bce = optim.Adam(model_bce.parameters(), lr=0.001)
 
     start_time = time.time()
-
     history_bce = run_experiment_bce(
         model=model_bce,
         train_loader=train_loader_baseline,
@@ -375,8 +363,8 @@ def train_resnet18(num_classes=8):
     set_seed(SEED)
     model_resnet = resnet18_model(num_classes=num_classes)
     optimizer = torch.optim.Adam(model_resnet.fc.parameters(),lr=LR)
-    start_time = time.time()
 
+    start_time = time.time()
     history = run_experiment(
         model_resnet,
         train_loader_resnet,
@@ -387,7 +375,6 @@ def train_resnet18(num_classes=8):
         "resnet18_pretrained.pt",
         scheduler=None
     )
-
     end_time = time.time()
     print(f"Training time: {end_time - start_time:.2f} seconds")
 
@@ -451,7 +438,6 @@ def train_resnet18_ft(num_classes=8):
     )
     return history_resnet_ft
 
-
 # ====================================
 # train mobilenet_v3_small_model
 # ====================================
@@ -459,7 +445,7 @@ def train_mobilenet_v3_small(num_classes=8,transform="base",train_load=train_loa
     print("=== Training MobileNet v3 small model ===")
     set_seed(SEED)
     model_mobilenet_small = mobilenet_v3_small_model(num_classes=8).to(device)
-    # print(model_mobilenet_small)
+
     print(device)
     total_params = sum(p.numel() for p in model_mobilenet_small.parameters())
     trainable_params = sum(p.numel() for p in model_mobilenet_small.parameters() if p.requires_grad)
@@ -467,9 +453,9 @@ def train_mobilenet_v3_small(num_classes=8,transform="base",train_load=train_loa
     print(f"Total parameters: {total_params:,}")  # 1_526_056
     print(f"Trainable parameters: {trainable_params:,}")  # 1_526_056
 
-    # for name, module in model_mobilenet_small.named_children():
-    #     params = sum(p.numel() for p in module.parameters())
-    #     print(f"{name:15} {params:,}")
+    for name, module in model_mobilenet_small.named_children():
+        params = sum(p.numel() for p in module.parameters())
+        print(f"{name:15} {params:,}")
 
     start_time = time.time()
     optimizer = torch.optim.AdamW(model_mobilenet_small.parameters(), lr=1e-3, weight_decay=1e-4)
@@ -560,6 +546,37 @@ def train_mobilenet_v3_large(
     )
     return history
 
+
+
+def train_depthwise_model(num_classes=8,dropout=0.0):
+    print(f"=== train depthwise model ===")
+
+    set_seed(SEED)
+    model = DepthwiseCNN(num_classes=num_classes,dropout=dropout).to(device)
+    optimizer_depth = optim.Adam(model.parameters(), lr=0.001)
+
+    start_time = time.time()
+    history = run_experiment(
+        model=model,
+        train_loader=train_loader_baseline,
+        val_loader=val_loader,
+        optimizer=optimizer_depth,
+        device=device,
+        epochs=num_epochs,
+        checkpoint_path=f"best_depthwise_{dropout}.pt",
+        scheduler=None
+    )
+    end_time = time.time()
+    print(f"Training time: {end_time - start_time:.2f} seconds")
+
+    plot_training_history(
+        history,
+        f"depthwise_model_{dropout}",
+        output_dir
+    )
+    return model,history
+
+
 if __name__ == "__main__":
     # train_small_cnn()
     # train_augmented()
@@ -568,13 +585,17 @@ if __name__ == "__main__":
     # weight_decay_exp()
     # train_scheduler()
     # reducelronplateau_exp()
+
     # train_standard_imbalanced()
     # train_balanced_imbalanced()
+
     # train_small_cnn_bce()
+
     # train_resnet18(8)
-    # train_resnet18_ft(8)
+    train_resnet18_ft(8)
+
     # train_mobilenet_v3_small(num_classes=8,transform="base",train_load=train_loader_resnet,val_load=val_loader_resnet)
-    train_mobilenet_v3_small(num_classes=8,transform="better_augment",train_load=train_loader_baseline,val_load=val_loader)
+    # train_mobilenet_v3_small(num_classes=8,transform="better_augment",train_load=train_loader_baseline,val_load=val_loader)
 
     # train_mobilenet_v3_large(num_classes=8,transform="base",train_load=train_loader_resnet,val_load=val_loader_resnet,mode="full",lr=1e-3,unfreeze_last_blocks=3)
     # train_mobilenet_v3_large(num_classes=8,transform="base",train_load=train_loader_resnet,val_load=val_loader_resnet,mode="head",lr=1e-3,unfreeze_last_blocks=3)
@@ -583,3 +604,5 @@ if __name__ == "__main__":
     # train_mobilenet_v3_large(num_classes=8, transform="augment", train_load=train_loader_baseline,val_load=val_loader, mode="full", lr=1e-3, unfreeze_last_blocks=3)
     # train_mobilenet_v3_large(num_classes=8, transform="augment", train_load=train_loader_baseline,val_load=val_loader, mode="head", lr=1e-3, unfreeze_last_blocks=3)
     # train_mobilenet_v3_large(num_classes=8, transform="augment", train_load=train_loader_baseline,val_load=val_loader, mode="last_blocks", lr=1e-3, unfreeze_last_blocks=3)
+
+    # train_depthwise_model(num_classes=8,dropout=0.5)
