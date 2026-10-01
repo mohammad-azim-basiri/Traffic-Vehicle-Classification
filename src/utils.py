@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision
 import random
 import numpy as np
 from sklearn.metrics import precision_score, recall_score, f1_score,confusion_matrix,ConfusionMatrixDisplay
@@ -8,6 +9,8 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import time
 import gc
+import platform
+import subprocess
 
 criterion = nn.CrossEntropyLoss()
 bce_criterion = nn.BCEWithLogitsLoss() # also do sigmoid.
@@ -394,7 +397,6 @@ def run_experiment_bce(model,train_loader,val_loader,optimizer,device,epochs=5,c
     return history
 
 
-
 def extract_predictions_and_confidence(model,loader,device="cpu",loss_type="ce"):
     model.eval()
     all_targets = []
@@ -442,8 +444,247 @@ def cuda_cooldown(seconds=300):
 
 
 
+# ======================================
+# Below functions can be used to save
+# all of the data of the experiments.
+# But because I already train many experiments
+# and only save the model state dicts
+# I couldn't retrain all of them again.😊
+# ======================================
+def run_experiment_save_checkpoint(
+    model,
+    train_loader,
+    val_loader,
+    optimizer,
+    device,
+    epochs=5,
+    checkpoint_path="best_model.pt",
+    scheduler=None,
+    seed=42,
+    class_to_idx=None,
+    train_transform=None,
+    eval_transform=None,
+    threshold=None,
+    experiment_config=None,
+    split_info=None,
+    criterion=None,
+):
+    history = {
+        "train_loss": [],
+        "val_loss": [],
+        "train_accuracy": [],
+        "val_accuracy": [],
+        "learning_rate": [],
+    }
+    best_val_acc = -float("inf")
+
+    for epoch in range(epochs):
+        train_metrics = run_one_epoch( model, loader=train_loader,optimizer=optimizer,device=device)
+        val_metrics = run_one_epoch(model,loader=val_loader,optimizer=None,device=device)
+
+        current_lr = optimizer.param_groups[0]["lr"]
+
+        history["train_loss"].append(train_metrics["loss"])
+        history["val_loss"].append(val_metrics["loss"])
+        history["train_accuracy"].append(train_metrics["Accuracy"])
+        history["val_accuracy"].append(val_metrics["Accuracy"])
+        history["learning_rate"].append(current_lr)
+
+        if val_metrics["Accuracy"] > best_val_acc:
+            best_val_acc = val_metrics["Accuracy"]
+
+            save_experiment_checkpoint(
+                path=f"../results/saved/{checkpoint_path}",
+                model=model,
+                optimizer=optimizer,
+                scheduler=scheduler,
+                history=history,
+                best_metric=best_val_acc,
+                best_epoch=epoch + 1,
+                seed=seed,
+                class_to_idx=class_to_idx,
+                train_transform=train_transform,
+                eval_transform=eval_transform,
+                threshold=threshold,
+                experiment_config=experiment_config,
+                split_info=split_info,
+                criterion=criterion if criterion is not None else globals().get("criterion"),
+                device=device,
+            )
+
+        print(
+            f"Epoch {epoch + 1:02d}/{epochs} | "
+            f"train loss: {train_metrics['loss']:.3f} | "
+            f"val loss: {val_metrics['loss']:.3f} | "
+            f"train acc: {train_metrics['Accuracy']:.1%} | "
+            f"val acc: {val_metrics['Accuracy']:.1%} | "
+            f"current lr: {current_lr}"
+        )
+
+        if scheduler is not None:
+            if isinstance(
+                    scheduler,
+                    torch.optim.lr_scheduler.ReduceLROnPlateau
+            ):
+                scheduler.step(val_metrics["loss"])
+
+            else:
+                scheduler.step()
+
+        if (epoch + 1) % 10 == 0 and (epoch + 1) < epochs:
+            for remaining in range(150, 0, -1):
+                print(f"\rCooling down... {remaining:03d} seconds remaining", end="")
+                time.sleep(1)
+            print("\n")
+
+    return history
+
+def serialize_transform(transform):
+    return {
+        "class": transform.__class__.__name__,
+        "repr": repr(transform),
+    }
 
 
+def get_model_info(model):
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    return {
+        "name": model.__class__.__name__,
+        "total_parameters": total_params,
+        "trainable_parameters": trainable_params,
+        "architecture": repr(model),
+    }
 
 
+def get_optimizer_info(optimizer):
+    param_groups = []
+    for group in optimizer.param_groups:
+        group_info = {
+            "lr": group.get("lr"),
+            "weight_decay": group.get("weight_decay", 0.0),
+        }
+        if "betas" in group:
+            group_info["betas"] = group["betas"]
+        if "eps" in group:
+            group_info["eps"] = group["eps"]
+        if "momentum" in group:
+            group_info["momentum"] = group["momentum"]
+        param_groups.append(group_info)
+    return {
+        "name": optimizer.__class__.__name__,
+        "param_groups": param_groups,
+    }
 
+
+def get_scheduler_info(scheduler):
+    if scheduler is None:
+        return None
+    return {
+        "name": scheduler.__class__.__name__,
+        "state": scheduler.state_dict(),
+    }
+
+
+def get_git_commit():
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            stderr=subprocess.DEVNULL
+        ).decode().strip()
+    except Exception:
+        return None
+
+
+def save_experiment_checkpoint(
+    path,
+    model,
+    optimizer=None,
+    scheduler=None,
+    history=None,
+    best_metric=None,
+    best_epoch=None,
+    seed=42,
+    class_to_idx=None,
+    train_transform=None,
+    eval_transform=None,
+    threshold=None,
+    experiment_config=None,
+    split_info=None,
+    criterion=None,
+    device=None,
+):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    if class_to_idx is not None:
+        class_to_idx = dict(class_to_idx)
+        idx_to_class = {
+            idx: cls
+            for cls, idx in class_to_idx.items()
+        }
+    else:
+        idx_to_class = None
+
+    checkpoint = {
+        "model_state_dict": model.state_dict(),
+        "model_info": get_model_info(model),
+        "optimizer_state_dict": (
+            optimizer.state_dict()
+            if optimizer is not None
+            else None
+        ),
+        "optimizer_info": (
+            get_optimizer_info(optimizer)
+            if optimizer is not None
+            else None
+        ),
+        "scheduler_info": get_scheduler_info(scheduler),
+        "history": history,
+        "best_metric": best_metric,
+        "best_epoch": best_epoch,
+        "class_to_idx": class_to_idx,
+        "idx_to_class": idx_to_class,
+        "split_info": split_info,
+        "transforms": {
+            "train": (
+                serialize_transform(train_transform)
+                if train_transform is not None
+                else None
+            ),
+            "eval": (
+                serialize_transform(eval_transform)
+                if eval_transform is not None
+                else None
+            ),
+        },
+        "threshold": threshold,
+        "criterion": (
+            criterion.__class__.__name__
+            if criterion is not None
+            else None
+        ),
+        "experiment_config": experiment_config,
+        "seed": seed,
+        "random_state": {
+            "python": random.getstate(),
+            "numpy": np.random.get_state(),
+            "torch": torch.get_rng_state(),
+            "torch_cuda": (
+                torch.cuda.get_rng_state_all()
+                if torch.cuda.is_available()
+                else None
+            ),
+        },
+        "environment": {
+            "python_version": platform.python_version(),
+            "torch_version": torch.__version__,
+            "torchvision_version": torchvision.__version__,
+            "cuda_available": torch.cuda.is_available(),
+            "cuda_version": torch.version.cuda,
+            "device": str(device),
+            "git_commit": get_git_commit(),
+        },
+    }
+    torch.save(checkpoint, path)
+    print(f"Checkpoint saved to: {path}")
