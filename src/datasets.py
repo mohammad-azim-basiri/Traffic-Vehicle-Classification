@@ -224,8 +224,8 @@ for batch_idx, (_, labels) in enumerate(train_loader_balanced_imbalanced ):
 resnet_weights = ResNet18_Weights.DEFAULT
 mobilenet_weights = MobileNet_V3_Small_Weights.DEFAULT
 
-print(resnet_weights.transforms())
-print(mobilenet_weights.transforms())
+# print(resnet_weights.transforms())
+# print(mobilenet_weights.transforms())
 
 weights = ResNet18_Weights.DEFAULT
 transform_resnet = weights.transforms()
