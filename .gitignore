@@ -3,5 +3,3 @@ csv_files/
 __pycache__/
 *.pyc
 .idea
-epochs_report.ipynb
-mobilenetv3-small.py
