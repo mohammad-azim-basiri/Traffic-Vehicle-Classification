@@ -21,6 +21,7 @@ SEED = 42
 DATASET_ROOT =Path("../data/dataset")
 TRAIN_ROOT = DATASET_ROOT / "cleaned" / "train"
 VAL_ROOT = DATASET_ROOT / "cleaned" / "val"
+TEST_ROOT = DATASET_ROOT / "cleaned" / "test"
 
 generator = torch.Generator().manual_seed(SEED)
 
@@ -233,6 +234,9 @@ transform_resnet = weights.transforms()
 train_dataset_resnet = datasets.ImageFolder(root=TRAIN_ROOT,transform=transform_resnet)
 val_dataset_resnet = datasets.ImageFolder(root=VAL_ROOT,transform=transform_resnet)
 
+test_dataset_resnet = datasets.ImageFolder(root=TEST_ROOT,transform=transform_resnet)
+test_dataset_base = datasets.ImageFolder(root=TEST_ROOT,transform=train_baseline_transform)
+
 train_loader_resnet = DataLoader(
     train_dataset_resnet,
     batch_size=BATCH_SIZE,
@@ -241,6 +245,18 @@ train_loader_resnet = DataLoader(
 )
 val_loader_resnet = DataLoader(
     val_dataset_resnet,
+    batch_size=BATCH_SIZE,
+    shuffle=False,
+    num_workers=0
+)
+test_loader_resnet = DataLoader(
+    test_dataset_resnet,
+    batch_size=BATCH_SIZE,
+    shuffle=False,
+    num_workers=0
+)
+test_loader_base = DataLoader(
+    test_dataset_base,
     batch_size=BATCH_SIZE,
     shuffle=False,
     num_workers=0
