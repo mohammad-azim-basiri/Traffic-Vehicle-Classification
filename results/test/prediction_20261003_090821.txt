@@ -1,0 +1,40 @@
+{
+  "image": "C:\\Users\\mab55\\AppData\\Local\\Temp\\tmpztio8540.jpg",
+  "checkpoint": "G:\\Maktabsharif_AI\\projects\\Traffic-Vehicle-Classification\\results\\saved\\best_baseline_small_cnn_0.0.pt",
+  "model": "small_cnn",
+  "loss_type": "ce",
+  "transform": "baseline",
+  "device": "cuda",
+  "predicted_class": "vanet",
+  "predicted_class_index": 7,
+  "confidence": 0.9135852456092834,
+  "probabilities": {
+    "ambulance": 0.07341601699590683,
+    "autobus": 1.5555944628431462e-05,
+    "kamyun": 0.00035675911931321025,
+    "kamyunet": 0.0008468872401863337,
+    "minibus": 0.00011863577674375847,
+    "savari": 0.011480266228318214,
+    "taxi": 0.00018058631394524127,
+    "vanet": 0.9135852456092834
+  },
+  "top_predictions": [
+    {
+      "class": "vanet",
+      "class_index": 7,
+      "score": 0.9135852456092834
+    },
+    {
+      "class": "ambulance",
+      "class_index": 0,
+      "score": 0.07341601699590683
+    },
+    {
+      "class": "savari",
+      "class_index": 5,
+      "score": 0.011480266228318214
+    }
+  ],
+  "threshold": 0.95,
+  "needs_review": true
+}

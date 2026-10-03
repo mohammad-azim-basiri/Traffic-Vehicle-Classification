@@ -1,0 +1,44 @@
+Trainable params: 4104
+Total params: 11180616
+fc.weight torch.Size([8, 512])
+fc.bias torch.Size([8])
+{
+  "image": "C:\\Users\\mab55\\AppData\\Local\\Temp\\tmp2u5qdgej.jpg",
+  "checkpoint": "G:\\Maktabsharif_AI\\projects\\Traffic-Vehicle-Classification\\results\\saved\\best_resnet18_ft.pt",
+  "model": "resnet18",
+  "loss_type": "ce",
+  "transform": "resnet",
+  "device": "cuda",
+  "predicted_class": "kamyunet",
+  "predicted_class_index": 3,
+  "confidence": 0.998641312122345,
+  "probabilities": {
+    "ambulance": 5.872401942497163e-08,
+    "autobus": 7.379620456049452e-06,
+    "kamyun": 0.001351024373434484,
+    "kamyunet": 0.998641312122345,
+    "minibus": 6.799908969234991e-10,
+    "savari": 1.532242888124813e-09,
+    "taxi": 1.0185389198724693e-09,
+    "vanet": 2.832936445429368e-07
+  },
+  "top_predictions": [
+    {
+      "class": "kamyunet",
+      "class_index": 3,
+      "score": 0.998641312122345
+    },
+    {
+      "class": "kamyun",
+      "class_index": 2,
+      "score": 0.001351024373434484
+    },
+    {
+      "class": "autobus",
+      "class_index": 1,
+      "score": 7.379620456049452e-06
+    }
+  ],
+  "threshold": 0.7,
+  "needs_review": false
+}

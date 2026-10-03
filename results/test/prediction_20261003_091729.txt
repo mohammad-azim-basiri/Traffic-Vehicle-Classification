@@ -1,0 +1,40 @@
+{
+  "image": "C:\\Users\\mab55\\AppData\\Local\\Temp\\tmpj3095tyk.jpg",
+  "checkpoint": "G:\\Maktabsharif_AI\\projects\\Traffic-Vehicle-Classification\\results\\saved\\mobilenet_v3_small_model_better_augment.pt",
+  "model": "mobilenet_v3_small",
+  "loss_type": "ce",
+  "transform": "resnet",
+  "device": "cuda",
+  "predicted_class": "ambulance",
+  "predicted_class_index": 0,
+  "confidence": 0.9999997615814209,
+  "probabilities": {
+    "ambulance": 0.9999997615814209,
+    "autobus": 3.037189640411886e-12,
+    "kamyun": 4.9296464688097785e-09,
+    "kamyunet": 4.5426595818298665e-09,
+    "minibus": 2.170708057747106e-10,
+    "savari": 8.182913548149262e-12,
+    "taxi": 5.7352048457581795e-12,
+    "vanet": 2.405922714387998e-07
+  },
+  "top_predictions": [
+    {
+      "class": "ambulance",
+      "class_index": 0,
+      "score": 0.9999997615814209
+    },
+    {
+      "class": "vanet",
+      "class_index": 7,
+      "score": 2.405922714387998e-07
+    },
+    {
+      "class": "kamyun",
+      "class_index": 2,
+      "score": 4.9296464688097785e-09
+    }
+  ],
+  "threshold": 0.7,
+  "needs_review": false
+}
