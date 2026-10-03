@@ -84,12 +84,12 @@ class SmallCnn(nn.Module):
 model_smallcnn = SmallCnn(num_classes=8)
 x_smallcnn = torch.randn(1,3,224,224)
 y_smallcnn = model_smallcnn(x_smallcnn)
-print(y_smallcnn.shape)
+# print(y_smallcnn.shape)
 
 total_params_smallcnn = sum(p.numel() for p in model_smallcnn.parameters())
 trainable_params_smallcnn = sum(p.numel() for p in model_smallcnn.parameters() if p.requires_grad)
-print(f"Total parameters small cnn: {total_params_smallcnn:,}")        # 585,640
-print(f"Trainable parameters small cnn: {trainable_params_smallcnn:,}")        # 585,640
+# print(f"Total parameters small cnn: {total_params_smallcnn:,}")        # 585,640
+# print(f"Trainable parameters small cnn: {trainable_params_smallcnn:,}")        # 585,640
 
 
 def resnet18_model(num_classes=8):
@@ -104,12 +104,12 @@ def resnet18_model(num_classes=8):
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     total_params = sum(p.numel() for p in model.parameters())
 
-    print(f"Trainable params: {trainable_params}")
-    print(f"Total params: {total_params}")
+    # print(f"Trainable params: {trainable_params}")
+    # print(f"Total params: {total_params}")
 
-    for name, param in model.named_parameters():
-        if param.requires_grad:
-            print(name, param.shape)
+    # for name, param in model.named_parameters():
+    #     if param.requires_grad:
+    #         print(name, param.shape)
 
     model = model.to(device)
 
@@ -219,10 +219,10 @@ class DepthwiseCNN(nn.Module):
 model_depth = DepthwiseCNN(num_classes=8, dropout=0.0)
 x_depth = torch.randn(4, 3, 224, 224)
 y_depth = model_depth(x_depth)
-print("Input shape :", x_depth.shape)     #torch.Size([4, 3, 224, 224])
-print("Output shape:", y_depth.shape)     #torch.Size([4, 8])
+# print("Input shape :", x_depth.shape)     #torch.Size([4, 3, 224, 224])
+# print("Output shape:", y_depth.shape)     #torch.Size([4, 8])
 
 total_params_depth = sum(p.numel() for p in model_depth.parameters())
 trainable_params_depth = sum(p.numel() for p in model_depth.parameters() if p.requires_grad)
-print(f"Total parameters: {total_params_depth:,}")        # 73,033
-print(f"Trainable parameters: {trainable_params_depth:,}")        # 73,033
+# print(f"Total parameters: {total_params_depth:,}")        # 73,033
+# print(f"Trainable parameters: {trainable_params_depth:,}")        # 73,033
