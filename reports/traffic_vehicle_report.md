@@ -318,6 +318,7 @@ Per-class performance:
 | savari |      0.89 |   0.96 | 0.93 |
 | taxi |      0.99 |   0.94 | 0.97 |
 | vanet |      0.85 |   0.72 | 0.78 |
+
 At epoch 50, Validation Accuracy decreased to 74.7%, while Training Accuracy remained around 98.7%. Therefore, the train-validation gap increased during the later stage of training.
 
 ---
