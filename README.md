@@ -40,7 +40,6 @@ project/
 │   ├── datasets.py
 │   ├── evaluation.ipynb
 │   ├── utils.py
-│   ├── app.py
 │   ├── models.py
 │   ├── predict.py
 │   ├── train.py
