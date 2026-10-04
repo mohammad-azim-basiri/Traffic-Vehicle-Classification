@@ -11,6 +11,13 @@ import time
 import gc
 import platform
 import subprocess
+from datasets import UnlabeledImageDataset
+import json
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+from torchvision.datasets import ImageFolder
+from torch.utils.data import DataLoader
 
 criterion = nn.CrossEntropyLoss()
 bce_criterion = nn.BCEWithLogitsLoss() # also do sigmoid.
@@ -451,13 +458,7 @@ def cuda_cooldown(seconds=300):
 # and only save the model state dicts
 # I couldn't retrain all of them again.😊
 # ======================================
-def run_experiment_save_checkpoint(
-    model,
-    train_loader,
-    val_loader,
-    optimizer,
-    device,
-    epochs=5,
+def run_experiment_save_checkpoint(model,train_loader,val_loader,optimizer,device,epochs=5,
     checkpoint_path="best_model.pt",
     scheduler=None,
     seed=42,
@@ -688,3 +689,139 @@ def save_experiment_checkpoint(
     }
     torch.save(checkpoint, path)
     print(f"Checkpoint saved to: {path}")
+# =================================
+# END
+# =================================
+def predict_images_from_folder(
+    model,
+    image_dir,
+    transform,
+    classes,
+    device,
+    review_threshold=0.70,
+    batch_size=32,
+    output_json=None,
+    output_plot=None,
+    mean=None,
+    std=None,
+):
+    dataset = UnlabeledImageDataset(image_dir=image_dir,transform=transform)
+
+    loader = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=False
+    )
+
+    model.eval()
+
+    json_results = []
+    predictions = []
+    confidences = []
+    scores = []
+
+    with torch.no_grad():
+
+        for images, paths in loader:
+            images = images.to(device)
+            logits = model(images)
+            probabilities = torch.softmax(logits, dim=1)
+            confidence, predicted_classes = probabilities.max(dim=1)
+            for i in range(len(images)):
+                pred_idx = int(predicted_classes[i].item())
+                conf = float(confidence[i].item())
+                probs = probabilities[i].cpu().numpy()
+                result = {
+                    "file_name": Path(paths[i]).name,
+                    "path": paths[i],
+                    "predicted_class": classes[pred_idx],
+                    "confidence": conf,
+                    "probabilities": {
+                        classes[j]: float(probs[j])
+                        for j in range(len(classes))
+                    },
+                    "needs_review": conf < review_threshold
+                }
+
+                json_results.append(result)
+                predictions.append(pred_idx)
+                confidences.append(conf)
+                scores.append(probs)
+
+
+    if output_json is not None:
+
+        with open(output_json,"w",encoding="utf-8") as f:
+            json.dump(json_results,f,indent=4,ensure_ascii=False)
+
+        print(f"JSON saved to: {output_json}")
+
+    print("=" * 70)
+    print(f"Total images: {len(dataset)}")
+
+    for result in json_results:
+        print(
+            f"File: {result['file_name']} | "
+            f"Pred: {result['predicted_class']} | "
+            f"Conf: {result['confidence']:.2%} | "
+            f"Review: {result['needs_review']}"
+        )
+
+    if output_plot is not None:
+        num_images = len(dataset)
+        cols = 3
+        rows = math.ceil(num_images / cols)
+        fig, axes = plt.subplots(rows,cols,figsize=(20, rows * 5))
+        axes = np.array(axes).reshape(-1)
+        if mean is None:
+            mean = torch.tensor([0.5, 0.5, 0.5])
+        if std is None:
+            std = torch.tensor([0.5, 0.5, 0.5])
+        mean = torch.tensor(mean).view(3, 1, 1)
+        std = torch.tensor(std).view(3, 1, 1)
+
+        for ax, idx in zip(axes, range(num_images)):
+            image, image_path = dataset[idx]
+
+            # denormalize
+            image = image.cpu() * std + mean
+            image = image.clamp(0, 1)
+            image = image.permute(1, 2, 0)
+            ax.imshow(image)
+            ax.set_title(
+                f"{Path(image_path).name}\n"
+                f"Pred: {classes[predictions[idx]]}\n"
+                f"Conf: {confidences[idx]:.2%}"
+            )
+            ax.axis("off")
+
+        for ax in axes[num_images:]:
+            ax.axis("off")
+
+        plt.tight_layout()
+
+        plt.savefig(
+            output_plot,
+            bbox_inches="tight",
+            dpi=300,
+            format="png"
+        )
+
+        plt.show()
+
+    return json_results
+
+
+def create_labeled_loader(data_path, transform, batch_size=32):
+    dataset = ImageFolder(
+        root=data_path,
+        transform=transform
+    )
+
+    loader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=False
+    )
+
+    return dataset, loader
