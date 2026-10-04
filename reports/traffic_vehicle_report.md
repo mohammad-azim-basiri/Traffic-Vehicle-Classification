@@ -1,9 +1,3 @@
-<style>
-.ltr { direction: ltr; text-align: left; unicode-bidi: plaintext; }
-.rtl { direction: rtl; text-align: right; unicode-bidi: plaintext; }
-table, pre, code { direction: ltr; text-align: left; }
-</style>
-
 # Project — Traffic Vehicle Classification
 ## Initial Project Report
 
