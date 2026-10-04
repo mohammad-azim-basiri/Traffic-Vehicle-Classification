@@ -652,7 +652,6 @@ def predict_test_images_MobileNet3(review_threshold=0.7):
     axes = np.array(axes).reshape(-1)
     for ax, idx in zip(axes, misclassified_indices):
         image, _ = test_dataset_resnet[idx]
-
         image = image * std + mean
         image = image.clamp(0, 1)
         image = image.permute(1, 2, 0)
