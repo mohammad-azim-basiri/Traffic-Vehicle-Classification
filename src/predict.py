@@ -486,7 +486,7 @@ def predict_test_images_with_res_ft(review_threshold=0.70):
             "predicted_class": predicted_class,
             "confidence": confidence,
             "probabilities": probabilities,
-            "needs_review": confidence < 0.70
+            "needs_review": confidence < review_threshold
         })
 
     with open("../results/test/resnet18_ft_predictions.json","w",encoding="utf-8") as f:
