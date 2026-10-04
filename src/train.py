@@ -578,31 +578,31 @@ def train_depthwise_model(num_classes=8,dropout=0.0):
 
 
 if __name__ == "__main__":
-    # train_small_cnn()
-    # train_augmented()
-    # dropout_exp()
-    # train_small_cnn_avgpool(pooling="avg")
-    # weight_decay_exp()
-    # train_scheduler()
-    # reducelronplateau_exp()
+    train_small_cnn()
+    train_augmented()
+    dropout_exp()
+    train_small_cnn_avgpool(pooling="avg")
+    weight_decay_exp()
+    train_scheduler()
+    reducelronplateau_exp()
 
-    # train_standard_imbalanced()
-    # train_balanced_imbalanced()
+    train_standard_imbalanced()
+    train_balanced_imbalanced()
 
-    # train_small_cnn_bce()
+    train_small_cnn_bce()
 
-    # train_resnet18(8)
+    train_resnet18(8)
     train_resnet18_ft(8)
 
-    # train_mobilenet_v3_small(num_classes=8,transform="base",train_load=train_loader_resnet,val_load=val_loader_resnet)
-    # train_mobilenet_v3_small(num_classes=8,transform="better_augment",train_load=train_loader_baseline,val_load=val_loader)
+    train_mobilenet_v3_small(num_classes=8,transform="base",train_load=train_loader_resnet,val_load=val_loader_resnet)
+    train_mobilenet_v3_small(num_classes=8,transform="better_augment",train_load=train_loader_baseline,val_load=val_loader)
 
-    # train_mobilenet_v3_large(num_classes=8,transform="base",train_load=train_loader_resnet,val_load=val_loader_resnet,mode="full",lr=1e-3,unfreeze_last_blocks=3)
-    # train_mobilenet_v3_large(num_classes=8,transform="base",train_load=train_loader_resnet,val_load=val_loader_resnet,mode="head",lr=1e-3,unfreeze_last_blocks=3)
-    # train_mobilenet_v3_large(num_classes=8,transform="base",train_load=train_loader_resnet,val_load=val_loader_resnet,mode="last_blocks",lr=1e-3,unfreeze_last_blocks=3)
+    train_mobilenet_v3_large(num_classes=8,transform="base",train_load=train_loader_resnet,val_load=val_loader_resnet,mode="full",lr=1e-3,unfreeze_last_blocks=3)
+    train_mobilenet_v3_large(num_classes=8,transform="base",train_load=train_loader_resnet,val_load=val_loader_resnet,mode="head",lr=1e-3,unfreeze_last_blocks=3)
+    train_mobilenet_v3_large(num_classes=8,transform="base",train_load=train_loader_resnet,val_load=val_loader_resnet,mode="last_blocks",lr=1e-3,unfreeze_last_blocks=3)
 
-    # train_mobilenet_v3_large(num_classes=8, transform="augment", train_load=train_loader_baseline,val_load=val_loader, mode="full", lr=1e-3, unfreeze_last_blocks=3)
-    # train_mobilenet_v3_large(num_classes=8, transform="augment", train_load=train_loader_baseline,val_load=val_loader, mode="head", lr=1e-3, unfreeze_last_blocks=3)
-    # train_mobilenet_v3_large(num_classes=8, transform="augment", train_load=train_loader_baseline,val_load=val_loader, mode="last_blocks", lr=1e-3, unfreeze_last_blocks=3)
+    train_mobilenet_v3_large(num_classes=8, transform="augment", train_load=train_loader_baseline,val_load=val_loader, mode="full", lr=1e-3, unfreeze_last_blocks=3)
+    train_mobilenet_v3_large(num_classes=8, transform="augment", train_load=train_loader_baseline,val_load=val_loader, mode="head", lr=1e-3, unfreeze_last_blocks=3)
+    train_mobilenet_v3_large(num_classes=8, transform="augment", train_load=train_loader_baseline,val_load=val_loader, mode="last_blocks", lr=1e-3, unfreeze_last_blocks=3)
 
-    # train_depthwise_model(num_classes=8,dropout=0.5)
+    train_depthwise_model(num_classes=8,dropout=0.5)
