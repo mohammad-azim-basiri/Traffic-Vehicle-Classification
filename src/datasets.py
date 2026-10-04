@@ -16,12 +16,15 @@ from torchvision.models import (
     MobileNet_V3_Small_Weights
 )
 
+from PIL import Image
+from torch.utils.data import Dataset
+
 BATCH_SIZE = 32
 SEED = 42
 DATASET_ROOT =Path("../data/dataset")
 TRAIN_ROOT = DATASET_ROOT / "cleaned" / "train"
 VAL_ROOT = DATASET_ROOT / "cleaned" / "val"
-TEST_ROOT = DATASET_ROOT / "cleaned" / "test"
+TEST_ROOT = DATASET_ROOT / "TEST"
 
 generator = torch.Generator().manual_seed(SEED)
 
@@ -262,3 +265,40 @@ test_loader_base = DataLoader(
     num_workers=0
 )
 assert train_dataset_resnet.class_to_idx == val_dataset_resnet.class_to_idx
+
+
+
+class UnlabeledImageDataset(Dataset):
+    def __init__(self, image_dir, transform=None):
+        self.image_dir = Path(image_dir)
+        self.transform = transform
+
+        image_extensions = {
+            ".jpg", ".jpeg", ".png", ".bmp",
+            ".webp", ".tif", ".tiff"
+        }
+
+        self.image_paths = sorted(
+            [
+                p for p in self.image_dir.iterdir()
+                if p.is_file() and p.suffix.lower() in image_extensions
+            ]
+        )
+
+        if len(self.image_paths) == 0:
+            raise ValueError(
+                f"No images found in: {self.image_dir}"
+            )
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def __getitem__(self, index):
+        image_path = self.image_paths[index]
+
+        image = Image.open(image_path).convert("RGB")
+
+        if self.transform is not None:
+            image = self.transform(image)
+
+        return image, str(image_path)
