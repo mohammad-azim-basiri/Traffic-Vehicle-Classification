@@ -23,6 +23,9 @@ criterion = nn.CrossEntropyLoss()
 bce_criterion = nn.BCEWithLogitsLoss() # also do sigmoid.
 # bce_criterion = nn.BCELoss() # we should do sigmoid.
 
+from ood_detection import predict_with_ood
+
+
 def run_one_epoch(model, loader, optimizer=None, device="cpu"):
     is_training = optimizer is not None
     model.train(is_training)
@@ -825,3 +828,51 @@ def create_labeled_loader(data_path, transform, batch_size=32):
     )
 
     return dataset, loader
+
+
+
+
+
+
+
+def _save_json(results, output_json):
+    output_json = Path(output_json)
+
+    output_json.parent.mkdir(parents=True,exist_ok=True)
+
+    with open(output_json,"w",encoding="utf-8") as f:
+        json.dump(results,f,indent=4,ensure_ascii=False)
+
+    print(f"JSON saved to: {output_json}")
+
+
+def _predict_labeled_dataset_with_ood(model,dataset,centroids,cov_inv,threshold,classes,device,review_threshold):
+    results = []
+
+    for i in range(len(dataset)):
+        image, true_label = dataset[i]
+        result = predict_with_ood(
+            model=model,
+            image=image,
+            centroids=centroids,
+            cov_inv=cov_inv,
+            threshold=threshold,
+            classes=classes,
+            device=device,
+            feature_layer_name="avgpool",
+            review_threshold=review_threshold
+        )
+        true_label = int(true_label)
+        results.append({
+            "path": dataset.samples[i][0],
+            "true_class": classes[true_label],
+            "predicted_class": result["prediction"],
+            "confidence": result["confidence"],
+            "ood_distance": result["ood_distance"],
+            "nearest_class": result["nearest_class"],
+            "is_ood": result["is_ood"],
+            "needs_review": result["needs_review"],
+            "probabilities": result["probabilities"]
+        })
+
+    return results
