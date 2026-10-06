@@ -5,8 +5,7 @@ import json
 import math
 import matplotlib.pyplot as plt
 from torchvision.models import ResNet18_Weights
-from transforms import train_baseline_transform
-from models import resnet18_model,mobilenet_v3_small_model
+from models import resnet18_model, mobilenet_v3_small_model
 from utils import (
     predict_images_from_folder,
     create_labeled_loader,
@@ -15,15 +14,24 @@ from utils import (
     run_one_epoch,
     print_metrics,
     plot_confusion_matrices,
-    extract_predictions_and_confidence
+    extract_predictions_and_confidence,
+    _save_json,
+    _predict_labeled_dataset_with_ood
 )
 
+from transforms import train_baseline_transform
+
+from ood_detection import (
+    load_ood_statistics,
+    # predict_with_ood,
+    evaluate_ood_folder
+)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 classes = ['ambulance','autobus','kamyun','kamyunet','minibus','savari','taxi','vanet']
 
 
 # with code below we can predict images without labels.
-def predict_resnet18_folder(image_dir,review_threshold=0.70):
+def predict_resnet18_folder_without_ood(image_dir,review_threshold=0.70):
 
     model_resnet_ft = resnet18_model(num_classes=8).to(device)
     model_resnet_ft.load_state_dict(torch.load("../results/saved/best_resnet18_ft.pt",map_location=device))
@@ -47,7 +55,7 @@ def predict_resnet18_folder(image_dir,review_threshold=0.70):
     return results
 
 
-def predict_mobilenet_v3_small_folder(image_dir,review_threshold=0.70):
+def predict_mobilenet_v3_small_folder_without_ood(image_dir,review_threshold=0.70):
     model_mobilenet = mobilenet_v3_small_model(num_classes=8).to(device)
     model_mobilenet.load_state_dict(
         torch.load("../results/saved/mobilenet_v3_small_model_better_augment.pt",map_location=device)
@@ -73,7 +81,7 @@ def predict_mobilenet_v3_small_folder(image_dir,review_threshold=0.70):
 
 
 # with code below we can predict images with labels.
-def predict_test_images_with_res_ft(data_path,review_threshold=0.70,batch_size=32):
+def predict_test_images_with_res_ft_without_ood(data_path,review_threshold=0.70,batch_size=32):
 
     weights = ResNet18_Weights.DEFAULT
     resnet_transform = weights.transforms()
@@ -215,7 +223,7 @@ def predict_test_images_with_res_ft(data_path,review_threshold=0.70,batch_size=3
     plt.show()
 
 
-def predict_test_images_MobileNet3(data_path,review_threshold=0.70,batch_size=32):
+def predict_test_images_MobileNet3_without_ood(data_path,review_threshold=0.70,batch_size=32):
     transform = train_baseline_transform
     dataset, loader = create_labeled_loader(
         data_path=data_path,
@@ -350,8 +358,183 @@ def predict_test_images_MobileNet3(data_path,review_threshold=0.70,batch_size=32
 
     plt.show()
 
+
+
+
+
+# ===========
+# WITH OOD
+# ===========
+def predict_resnet18_labeled_folder(data_path,review_threshold=0.85,
+    batch_size=32, output_json="../results/test/resnet18_labeled_predictions_with_ood.json"):
+
+    model = resnet18_model(num_classes=8).to(device)
+    model.load_state_dict(torch.load("../results/saved/best_resnet18_ft.pt",map_location=device))
+    model.eval()
+
+    weights = ResNet18_Weights.DEFAULT
+    transform = weights.transforms()
+
+    dataset, _ = create_labeled_loader(data_path=data_path,transform=transform,batch_size=batch_size)
+
+
+    ood_stats = load_ood_statistics("../results/saved/resnet_fine-tuned_ood_stats.npz")
+
+    centroids = ood_stats["centroids"]
+    cov_inv = ood_stats["cov_inv"]
+    threshold = ood_stats["threshold"]
+
+    results = _predict_labeled_dataset_with_ood(
+        model=model,
+        dataset=dataset,
+        centroids=centroids,
+        cov_inv=cov_inv,
+        threshold=threshold,
+        classes=classes,
+        device=device,
+        review_threshold=review_threshold
+    )
+
+    _save_json(results,output_json)
+
+    return results
+
+
+def predict_resnet18_folder(image_dir, review_threshold=0.85,
+    output_json="../results/test/resnet18_folder_predictions_with_ood.json"):
+
+    model = resnet18_model(num_classes=8).to(device)
+
+    model.load_state_dict(torch.load("../results/saved/best_resnet18_ft.pt",map_location=device))
+    model.eval()
+
+    weights = ResNet18_Weights.DEFAULT
+    transform = weights.transforms()
+
+    ood_stats = load_ood_statistics("../results/saved/resnet_fine-tuned_ood_stats.npz")
+
+    results = evaluate_ood_folder(
+        model=model,
+        image_dir=image_dir,
+        transform=transform,
+        centroids=ood_stats["centroids"],
+        cov_inv=ood_stats["cov_inv"],
+        threshold=ood_stats["threshold"],
+        classes=classes,
+        device=device,
+        feature_layer_name="avgpool",
+        review_threshold=review_threshold
+    )
+    _save_json(results,output_json)
+
+    return results
+
+
+# =================================================
+# MobilenetV3 small better augmentation prediction
+# =================================================
+def predict_mobilenet_v3_small_labeled_folder(data_path, review_threshold=0.85, batch_size=32,
+    output_json="../results/test/mobilenet_v3_small_labeled_predictions_with_ood.json"):
+
+
+    model = mobilenet_v3_small_model(num_classes=8).to(device)
+    model.load_state_dict(torch.load("../results/saved/mobilenet_v3_small_model_better_augment.pt",map_location=device))
+
+    model.eval()
+    transform = train_baseline_transform
+
+    dataset, _ = create_labeled_loader(
+        data_path=data_path,
+        transform=transform,
+        batch_size=batch_size
+    )
+
+    ood_stats = load_ood_statistics("../results/saved/mobilenet_v3_small_ood_stats.npz")
+
+    centroids = ood_stats["centroids"]
+    cov_inv = ood_stats["cov_inv"]
+    threshold = ood_stats["threshold"]
+
+    results = _predict_labeled_dataset_with_ood(
+        model=model,
+        dataset=dataset,
+        centroids=centroids,
+        cov_inv=cov_inv,
+        threshold=threshold,
+        classes=classes,
+        device=device,
+        review_threshold=review_threshold
+    )
+    _save_json(results,output_json)
+
+    return results
+
+
+def predict_mobilenet_v3_small_folder(image_dir,review_threshold=0.85,
+    output_json="../results/test/mobilenet_v3_small_folder_predictions_with_ood.json"):
+
+    model = mobilenet_v3_small_model(num_classes=8).to(device)
+
+    model.load_state_dict(torch.load("../results/saved/mobilenet_v3_small_model_better_augment.pt",map_location=device))
+    model.eval()
+    transform = train_baseline_transform
+
+    ood_stats = load_ood_statistics("../results/saved/mobilenet_v3_small_ood_stats.npz")
+
+    results = evaluate_ood_folder(
+        model=model,
+        image_dir=image_dir,
+        transform=transform,
+        centroids=ood_stats["centroids"],
+        cov_inv=ood_stats["cov_inv"],
+        threshold=ood_stats["threshold"],
+        classes=classes,
+        device=device,
+        feature_layer_name="avgpool",
+        review_threshold=review_threshold
+    )
+    _save_json(results,output_json)
+
+    return results
+
+
+
+
 if __name__ == "__main__":
-    predict_resnet18_folder(image_dir="../data/dataset/neisan",review_threshold=0.85)
-    predict_mobilenet_v3_small_folder(image_dir="../data/dataset/neisan",review_threshold=0.85)
-    predict_test_images_with_res_ft(data_path="../data/dataset/TEST",review_threshold = 0.85)
-    predict_test_images_MobileNet3(data_path="../data/dataset/TEST",review_threshold = 0.85)
+    # without OOD
+    predict_resnet18_folder_without_ood(image_dir="../data/dataset/New folder",review_threshold=0.85)
+    predict_mobilenet_v3_small_folder_without_ood(image_dir="../data/dataset/neisan",review_threshold=0.85)
+
+    predict_test_images_with_res_ft_without_ood(data_path="../data/dataset/TEST",review_threshold = 0.85)
+    predict_test_images_MobileNet3_without_ood(data_path="../data/dataset/TEST",review_threshold = 0.85)
+
+    # with OOD
+    predict_resnet18_labeled_folder(
+        data_path="../data/dataset/TEST",
+        review_threshold=0.85,
+        batch_size=32,
+        output_json="../results/test/resnet18_labeled_predictions_with_ood.json"
+    )
+
+    predict_resnet18_folder(
+        image_dir="../data/dataset/neisan",
+        review_threshold= 0.85,
+        output_json="../results/test/resnet18_predictions_with_ood.json"
+    )
+
+    predict_mobilenet_v3_small_labeled_folder(
+        data_path="../data/dataset/TEST",
+        review_threshold=0.85,
+        batch_size=32,
+        output_json="../results/test/mobilenet_v3_small_labeled_predictions_with_ood.json"
+    )
+
+    predict_mobilenet_v3_small_folder(
+        image_dir="../data/dataset/neisan",
+        review_threshold=0.85,
+        output_json="../results/test/mobilenet_v3_small_predictions_with_ood.json"
+    )
+
+
+
+
