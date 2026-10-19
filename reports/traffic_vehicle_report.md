@@ -37,7 +37,7 @@ The class mapping in `ImageFolder` was checked between train and validation, and
 
 some of the images from all the 8 classes we have
 
-![img.png](img.png)
+
 ---
 
 ## 2.2 Initial Data Quality Check
