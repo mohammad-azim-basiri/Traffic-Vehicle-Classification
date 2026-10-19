@@ -943,7 +943,6 @@ Therefore, some errors are not simply low-confidence mistakes, and in some cases
 
 12 images of 29 wrong predicted:
 
-<img src="img_13.png" width="1000">
 
 
 ---
@@ -1062,10 +1061,6 @@ Per-class performance:
 <img src="img_15.png" width="500">
 <img src="img_16.png" width="500">
 <img src="img_17.png" width="500">
-
-all the misclassified images:
-
-<img src="img_18.png" width="1000">
 
 ---
 
